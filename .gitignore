@@ -102,3 +102,19 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# IDE
+**/.idea
+
+# Mac OS
+.DS_Store
+.tmp
+
+# Serverless framework
+admin.env
+.env
+_meta
+.serverless
+
+# Node
+node_modules/
