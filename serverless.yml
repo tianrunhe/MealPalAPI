@@ -13,7 +13,7 @@ plugins:
 
 custom:
   wsgi:
-    app: app.app
+    app: mealpal.main.app
     packRequirements: false
 
 functions:
