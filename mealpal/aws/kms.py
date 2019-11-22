@@ -1,7 +1,7 @@
 from base64 import b64decode
 import boto3
 
-kms_client = boto3.client('kms')
+kms_client = boto3.client('kms', region_name="us-east-1")
 
 
 def decrypt(secret):
