@@ -1,4 +1,5 @@
-import requests, json
+import json
+import requests
 
 from mealpal.aws.kms import decrypt
 from mealpal.utils.config_fetcher import ConfigFetcher
@@ -14,8 +15,8 @@ class LoggingInManager:
         'Content-Type': 'application/json',
     }
 
-    def __init__(self, ):
-        self.config_fetcher = ConfigFetcher()
+    def __init__(self, config_fetcher=None):
+        self.config_fetcher = config_fetcher if config_fetcher is not None else ConfigFetcher()
         account_info = self.config_fetcher.get_account_info()
         self.email = account_info['email']
         self.password = decrypt(account_info['encryptedPassword'])
