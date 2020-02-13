@@ -6,6 +6,12 @@ provider:
   stage: dev
   region: us-east-1
   memorySize: 128
+  timeout: 120 # 2 minutes
+  iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - kms:Decrypt
+        Resource: 'arn:aws:kms:us-east-1:481497395090:key/*'
 
 plugins:
   - serverless-wsgi
@@ -19,7 +25,6 @@ custom:
 functions:
   app:
     handler: wsgi_handler.handler
-    awsKmsKeyArn: 'arn:aws:kms:us-east-1:481497395090:key/6ea89d44-c4e3-477e-92d8-37ddf789fa09'
     events:
       - http: ANY /
       - http: 'ANY {proxy+}'

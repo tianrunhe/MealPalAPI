@@ -1,5 +1,7 @@
 import requests
 import json
+import urllib.parse
+from dictor import dictor
 from flask import Flask
 from flask import jsonify
 
@@ -24,7 +26,7 @@ def get_cities():
 
 
 @app.route('/reserve/<schedule_id>', methods=['GET', 'POST'])
-def user(schedule_id):
+def reserve(schedule_id):
     with LoggingInManager() as context:
         reserve_data = {
             'quantity': 1,
@@ -35,3 +37,34 @@ def user(schedule_id):
         response = requests.post('https://secure.mealpal.com/api/v2/reservations', data=json.dumps(reserve_data),
                                  headers=LoggingInManager.HEADERS, cookies=context.cookies)
         return json.dumps({'success': response.ok}), response.status_code, {'ContentType': 'application/json'}
+
+# Seattle city_id: efec89ef-da57-4f9c-80e7-93a37e6253da
+@app.route('/find/<city_id>', methods=['GET', 'POST'])
+def find(city_id):
+    with LoggingInManager() as context:
+        res = requests.get('https://secure.mealpal.com/api/v1/cities/{}/product_offerings/lunch/menu'.format(city_id),
+                           headers=LoggingInManager.HEADERS, cookies=context.cookies)
+
+        office_address = "2021 7th Ave, Seattle, WA"
+        result = []
+
+        for offering in res.json()['schedules']:
+            restaurant = offering['restaurant']
+            neighborhood = restaurant['neighborhood']
+            if neighborhood['name'] != 'Downtown':
+                continue
+            destination = "{}, {}, {}".format(restaurant['address'], restaurant['city']['name'], restaurant['state'])
+
+            distance_matrix = requests.post("https://maps.googleapis.com/maps/api/distancematrix/json?" +
+                                            "units=imperial&" +
+                                            "&origins={}&".format(urllib.parse.quote(office_address)) +
+                                            "destinations={}&".format(urllib.parse.quote(destination)) +
+                                            "key={}&".format(context.googleMapAPIKey) +
+                                            "mode=walking")
+
+            json_data = distance_matrix.json()
+            duration = dictor(json_data, 'rows.0.elements.0.duration.value')
+            if duration is not None and duration < 600:  # 10 minutes
+                result.append(offering)
+
+        return jsonify(result)
