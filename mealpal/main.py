@@ -40,7 +40,6 @@ def reserve(schedule_id):
         return json.dumps({'success': response.ok}), response.status_code, {'ContentType': 'application/json'}
 
 
-# Seattle city_id: efec89ef-da57-4f9c-80e7-93a37e6253da
 @app.route('/find/<city_id>', methods=['GET', 'POST'])
 def find(city_id):
     with LoggingInManager() as context:
