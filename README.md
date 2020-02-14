@@ -4,4 +4,4 @@
 There are 3 routes now:
 1. `/cities` returns all of the cities/countries with MealPal service
 2. `/reserve/<schedule_id>/` makes reservation for a meal tomorrow
-3. `/find/<city_id>?office=%s` returns the meal offerings tomorrow for a given city, ordered by walking distance from the passed-in office address
+3. `/find/<city_id>/<neighborhood_id>?office=%s` returns the meal offerings tomorrow for a given city and neighborhood, ordered by walking distance from the passed-in office address

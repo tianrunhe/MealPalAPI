@@ -47,6 +47,7 @@ def test_find_with_office_address():
                     "name": "Seattle"
                 },
                 "neighborhood": {
+                    "id": "1",
                     "name": "Downtown"
                 },
                 "state": "WA"
@@ -89,7 +90,7 @@ def test_find_with_office_address():
         with patch('mealpal.utils.logging_in_manager.decrypt') as patch_decrypt:
             patch_decrypt.return_value = "MealPalAPITest"
 
-            response = app.test_client().post('/find/1234?office=abc')
+            response = app.test_client().post('/find/1234/1?office=abc')
             assert response.status_code == 200
             assert response.json == [schedule]
 
@@ -104,6 +105,7 @@ def test_find_without_office_address():
                     "name": "Seattle"
                 },
                 "neighborhood": {
+                    "id": "1",
                     "name": "Downtown"
                 },
                 "state": "WA"
@@ -145,7 +147,7 @@ def test_find_without_office_address():
         with patch('mealpal.utils.logging_in_manager.decrypt') as patch_decrypt:
             patch_decrypt.return_value = "MealPalAPITest"
 
-            response = app.test_client().post('/find/1234')
+            response = app.test_client().post('/find/1234/1')
             assert response.status_code == 200
             assert response.json == [schedule]
 
@@ -160,6 +162,7 @@ def test_find_with_office_address_multiple_offerings():
                     "name": "Seattle"
                 },
                 "neighborhood": {
+                    "id": "1",
                     "name": "Downtown"
                 },
                 "state": "WA"
@@ -172,6 +175,7 @@ def test_find_with_office_address_multiple_offerings():
                     "name": "Seattle"
                 },
                 "neighborhood": {
+                    "id": "1",
                     "name": "Downtown"
                 },
                 "state": "WA"
@@ -242,6 +246,11 @@ def test_find_with_office_address_multiple_offerings():
         with patch('mealpal.utils.logging_in_manager.decrypt') as patch_decrypt:
             patch_decrypt.return_value = "MealPalAPITest"
 
-            response = app.test_client().post('/find/1234?office=abc')
+            response = app.test_client().post('/find/1234/1?office=abc')
             assert response.status_code == 200
             assert response.json == [schedule2, schedule1]  # schedule2 is closer to the office than schedule1
+
+
+def test_find_no_path_parameters():
+    response = app.test_client().get('/find')
+    assert response.status_code == 404

@@ -20,7 +20,7 @@ def hello():
 def get_cities():
     response = requests.post("https://secure.mealpal.com/1/functions/getCitiesWithNeighborhoods")
     data = [
-        {'id': city['id'], 'name': city['name'], 'state': city['state']}
+        {'id': city['id'], 'name': city['name'], 'state': city['state'], 'neighborhoods': city['neighborhoods']}
         for city in response.json()['result']
     ]
     return jsonify(data)
@@ -40,8 +40,8 @@ def reserve(schedule_id):
         return json.dumps({'success': response.ok}), response.status_code, {'ContentType': 'application/json'}
 
 
-@app.route('/find/<city_id>', methods=['GET', 'POST'])
-def find(city_id):
+@app.route('/find/<city_id>/<neighborhood_id>', methods=['GET', 'POST'])
+def find(city_id, neighborhood_id):
     with LoggingInManager() as context:
         res = requests.get('https://secure.mealpal.com/api/v1/cities/{}/product_offerings/lunch/menu'.format(city_id),
                            headers=LoggingInManager.HEADERS, cookies=context.cookies)
@@ -52,11 +52,10 @@ def find(city_id):
             return jsonify(res.json()['schedules'])
 
         results = []
-        for offering in res.json()['schedules']:
+        eligible_schedules = [schedule for schedule in res.json()['schedules']
+                              if schedule['restaurant']['neighborhood']['id'] == neighborhood_id]
+        for offering in eligible_schedules:
             restaurant = offering['restaurant']
-            neighborhood = restaurant['neighborhood']
-            if neighborhood['name'] != 'Downtown':
-                continue
             destination = "{}, {}, {}".format(restaurant['address'], restaurant['city']['name'], restaurant['state'])
 
             distance_matrix = requests.post("https://maps.googleapis.com/maps/api/distancematrix/json?" +
