@@ -11,7 +11,7 @@ provider:
       - Effect: Allow
         Action:
           - kms:Decrypt
-        Resource: 'arn:aws:kms:us-east-1:481497395090:key/*'
+        Resource: 'arn:aws:kms:*:*:key/*'
 
 plugins:
   - serverless-wsgi

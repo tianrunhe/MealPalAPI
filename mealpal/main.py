@@ -4,6 +4,7 @@ import urllib.parse
 from dictor import dictor
 from flask import Flask
 from flask import jsonify
+from flask import request
 
 from mealpal.utils.logging_in_manager import LoggingInManager
 
@@ -38,6 +39,7 @@ def reserve(schedule_id):
                                  headers=LoggingInManager.HEADERS, cookies=context.cookies)
         return json.dumps({'success': response.ok}), response.status_code, {'ContentType': 'application/json'}
 
+
 # Seattle city_id: efec89ef-da57-4f9c-80e7-93a37e6253da
 @app.route('/find/<city_id>', methods=['GET', 'POST'])
 def find(city_id):
@@ -45,9 +47,12 @@ def find(city_id):
         res = requests.get('https://secure.mealpal.com/api/v1/cities/{}/product_offerings/lunch/menu'.format(city_id),
                            headers=LoggingInManager.HEADERS, cookies=context.cookies)
 
-        office_address = "2021 7th Ave, Seattle, WA"
-        result = []
+        office_address = request.args.get('office')
 
+        if office_address is None:
+            return jsonify(res.json()['schedules'])
+
+        results = []
         for offering in res.json()['schedules']:
             restaurant = offering['restaurant']
             neighborhood = restaurant['neighborhood']
@@ -64,7 +69,8 @@ def find(city_id):
 
             json_data = distance_matrix.json()
             duration = dictor(json_data, 'rows.0.elements.0.duration.value')
-            if duration is not None and duration < 600:  # 10 minutes
-                result.append(offering)
+            results.append({'offering': offering, 'walkingDistance': duration})
 
-        return jsonify(result)
+        response = [result['offering'] for result in sorted(results, key=lambda i: i['walkingDistance'])]
+
+        return jsonify(response)
