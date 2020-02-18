@@ -7,6 +7,7 @@ from flask import jsonify
 from flask import request
 
 from mealpal.utils.logging_in_manager import LoggingInManager
+import mealpal.aws.dynamodb as dynamodb
 
 app = Flask(__name__)
 
@@ -56,17 +57,25 @@ def find(city_id, neighborhood_id):
                               if schedule['restaurant']['neighborhood']['id'] == neighborhood_id]
         for offering in eligible_schedules:
             restaurant = offering['restaurant']
-            destination = "{}, {}, {}".format(restaurant['address'], restaurant['city']['name'], restaurant['state'])
 
-            distance_matrix = requests.post("https://maps.googleapis.com/maps/api/distancematrix/json?" +
-                                            "units=imperial&" +
-                                            "&origins={}&".format(urllib.parse.quote(office_address)) +
-                                            "destinations={}&".format(urllib.parse.quote(destination)) +
-                                            "key={}&".format(context.googleMapAPIKey) +
-                                            "mode=walking")
+            destination_id = restaurant['id']
+            print(destination_id)
+            duration = dynamodb.get_distance(office_address, destination_id)
+            if duration is None:
+                destination = "{}, {}, {}".format(restaurant['address'], restaurant['city']['name'], restaurant['state'])
 
-            json_data = distance_matrix.json()
-            duration = dictor(json_data, 'rows.0.elements.0.duration.value')
+                distance_matrix = requests.post("https://maps.googleapis.com/maps/api/distancematrix/json?" +
+                                                "units=imperial&" +
+                                                "&origins={}&".format(urllib.parse.quote(office_address)) +
+                                                "destinations={}&".format(urllib.parse.quote(destination)) +
+                                                "key={}&".format(context.googleMapAPIKey) +
+                                                "mode=walking")
+
+                json_data = distance_matrix.json()
+                duration = dictor(json_data, 'rows.0.elements.0.duration.value')
+                if duration is not None:
+                    dynamodb.store_distance(office_address, destination_id, duration)
+
             results.append({'offering': offering, 'walkingDistance': duration})
 
         response = [result['offering'] for result in sorted(results, key=lambda i: i['walkingDistance'])]

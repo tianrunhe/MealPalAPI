@@ -12,6 +12,15 @@ provider:
         Action:
           - kms:Decrypt
         Resource: 'arn:aws:kms:*:*:key/*'
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+          - dynamodb:Scan
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:DeleteItem
+        Resource: "arn:aws:dynamodb:us-east-1:481497395090:table/distance_matrix"
 
 plugins:
   - serverless-wsgi

@@ -42,6 +42,7 @@ def test_find_with_office_address():
         patch_requests.get.return_value = Mock(ok=True)
         schedule = {
             "restaurant": {
+                "id": "1",
                 "address": "address",
                 "city": {
                     "name": "Seattle"
@@ -90,9 +91,12 @@ def test_find_with_office_address():
         with patch('mealpal.utils.logging_in_manager.decrypt') as patch_decrypt:
             patch_decrypt.return_value = "MealPalAPITest"
 
-            response = app.test_client().post('/find/1234/1?office=abc')
-            assert response.status_code == 200
-            assert response.json == [schedule]
+            with patch('mealpal.aws.dynamodb.get_distance') as patch_get_distance:
+                patch_get_distance.return_value = 10
+
+                response = app.test_client().post('/find/1234/1?office=abc')
+                assert response.status_code == 200
+                assert response.json == [schedule]
 
 
 def test_find_without_office_address():
@@ -100,6 +104,7 @@ def test_find_without_office_address():
         patch_requests.get.return_value = Mock(ok=True)
         schedule = {
             "restaurant": {
+                "id": "1",
                 "address": "address",
                 "city": {
                     "name": "Seattle"
@@ -157,6 +162,7 @@ def test_find_with_office_address_multiple_offerings():
         patch_requests.get.return_value = Mock(ok=True)
         schedule1 = {
             "restaurant": {
+                "id": "1",
                 "address": "address1",
                 "city": {
                     "name": "Seattle"
@@ -170,6 +176,7 @@ def test_find_with_office_address_multiple_offerings():
         }
         schedule2 = {
             "restaurant": {
+                "id": "2",
                 "address": "address2",
                 "city": {
                     "name": "Seattle"
@@ -246,9 +253,13 @@ def test_find_with_office_address_multiple_offerings():
         with patch('mealpal.utils.logging_in_manager.decrypt') as patch_decrypt:
             patch_decrypt.return_value = "MealPalAPITest"
 
-            response = app.test_client().post('/find/1234/1?office=abc')
-            assert response.status_code == 200
-            assert response.json == [schedule2, schedule1]  # schedule2 is closer to the office than schedule1
+            with patch('mealpal.aws.dynamodb.get_distance') as patch_get_distance:
+                patch_get_distance.return_value = None
+
+                with patch('mealpal.aws.dynamodb.store_distance'):
+                    response = app.test_client().post('/find/1234/1?office=abc')
+                    assert response.status_code == 200
+                    assert response.json == [schedule2, schedule1]  # schedule2 is closer to the office than schedule1
 
 
 def test_find_no_path_parameters():
