@@ -14,7 +14,7 @@ class ConfigFetcher(object):
             "encryptedPassword": self.config.get("account", "encryptedPassword")
         }
 
-    def get_google_map_info(self):
+    def get_google_maps_info(self):
         return {
             "encryptedAPIKey": self.config.get("googleMap", "encryptedAPIKey")
         }

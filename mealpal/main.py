@@ -1,14 +1,15 @@
 import requests
 import json
-import urllib.parse
-from dictor import dictor
+from concurrent.futures import ThreadPoolExecutor
 from flask import Flask
 from flask import jsonify
 from flask import request
 
+import mealpal.utils.google_maps_client as google_maps
 from mealpal.utils.logging_in_manager import LoggingInManager
 import mealpal.aws.dynamodb as dynamodb
 
+executor = ThreadPoolExecutor(10)
 app = Flask(__name__)
 
 
@@ -41,40 +42,34 @@ def reserve(schedule_id):
         return json.dumps({'success': response.ok}), response.status_code, {'ContentType': 'application/json'}
 
 
+@app.route('/find/<city_id>', defaults={'neighborhood_id': None}, methods=['GET', 'POST'])
 @app.route('/find/<city_id>/<neighborhood_id>', methods=['GET', 'POST'])
 def find(city_id, neighborhood_id):
     with LoggingInManager() as context:
         res = requests.get('https://secure.mealpal.com/api/v1/cities/{}/product_offerings/lunch/menu'.format(city_id),
                            headers=LoggingInManager.HEADERS, cookies=context.cookies)
+        schedules = res.json()['schedules']
+        if neighborhood_id is None:
+            eligible_schedules = schedules
+        else:
+            eligible_schedules = [schedule for schedule in schedules
+                                  if schedule['restaurant']['neighborhood']['id'] == neighborhood_id]
 
-        office_address = request.args.get('office')
-
-        if office_address is None:
-            return jsonify(res.json()['schedules'])
+        origin_address = request.args.get('origin')
+        if origin_address is None:
+            return jsonify(eligible_schedules)
 
         results = []
-        eligible_schedules = [schedule for schedule in res.json()['schedules']
-                              if schedule['restaurant']['neighborhood']['id'] == neighborhood_id]
         for offering in eligible_schedules:
             restaurant = offering['restaurant']
 
             destination_id = restaurant['id']
-            print(destination_id)
-            duration = dynamodb.get_distance(office_address, destination_id)
+            duration = dynamodb.get_distance(origin_address, destination_id)
             if duration is None:
-                destination = "{}, {}, {}".format(restaurant['address'], restaurant['city']['name'], restaurant['state'])
-
-                distance_matrix = requests.post("https://maps.googleapis.com/maps/api/distancematrix/json?" +
-                                                "units=imperial&" +
-                                                "&origins={}&".format(urllib.parse.quote(office_address)) +
-                                                "destinations={}&".format(urllib.parse.quote(destination)) +
-                                                "key={}&".format(context.googleMapAPIKey) +
-                                                "mode=walking")
-
-                json_data = distance_matrix.json()
-                duration = dictor(json_data, 'rows.0.elements.0.duration.value')
+                destination = F"{restaurant['address']}, {restaurant['city']['name']}, {restaurant['state']}"
+                duration = google_maps.get_walking_time(origin_address, destination)
                 if duration is not None:
-                    dynamodb.store_distance(office_address, destination_id, duration)
+                    executor.submit(dynamodb.store_distance, origin_address, destination_id, duration)
 
             results.append({'offering': offering, 'walkingDistance': duration})
 

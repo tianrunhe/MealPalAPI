@@ -4,6 +4,6 @@ def test_decrypt(config_fetcher):
         "encryptedPassword": 'MealPalAPITest'
     }
 
-    assert config_fetcher.get_google_map_info() == {
+    assert config_fetcher.get_google_maps_info() == {
         "encryptedAPIKey": 'encryptedAPIKey'
     }

@@ -8,9 +8,3 @@ def test_logging_in_manager(config_fetcher):
 
         with LoggingInManager(config_fetcher) as context:
             assert context.cookies['isLoggedIn']
-
-    with patch('mealpal.utils.logging_in_manager.decrypt') as patch_decrypt:
-        patch_decrypt.return_value = "encryptedAPIKey"
-
-        with LoggingInManager(config_fetcher) as context:
-            assert context.googleMapAPIKey == 'encryptedAPIKey';

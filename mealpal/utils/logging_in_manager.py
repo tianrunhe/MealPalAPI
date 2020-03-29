@@ -19,10 +19,8 @@ class LoggingInManager:
     def __init__(self, config_fetcher=None):
         self.config_fetcher = config_fetcher if config_fetcher is not None else ConfigFetcher()
         account_info = self.config_fetcher.get_account_info()
-        google_map_info = self.config_fetcher.get_google_map_info()
         self.email = account_info['email']
         self.password = decrypt(account_info['encryptedPassword'])
-        self.googleMapAPIKey = decrypt(google_map_info['encryptedAPIKey'])
 
     def __enter__(self):
         data = {

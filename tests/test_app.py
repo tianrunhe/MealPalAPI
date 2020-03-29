@@ -37,7 +37,7 @@ def test_reserve():
             assert b'{\"success\": false}' in response.data
 
 
-def test_find_with_office_address():
+def test_find_with_origin_address():
     with patch('mealpal.main.requests') as patch_requests:
         patch_requests.get.return_value = Mock(ok=True)
         schedule = {
@@ -60,104 +60,54 @@ def test_find_with_office_address():
             ]
         }
 
-        patch_requests.post.return_value = Mock(ok=True)
-        patch_requests.post.return_value.json.return_value = {
-            "destination_addresses": [
-                "address, Seattle, WA"
-            ],
-            "origin_addresses": [
-                "2021 7th Ave, Seattle, WA"
-            ],
-            "rows": [
-                {
-                    "elements": [
-                        {
-                            "distance": {
-                                "text": "10km",
-                                "value": 10000
-                            },
-                            "duration": {
-                                "text": "5 minutes",
-                                "value": 300
-                            },
-                            "status": "OK"
-                        }
-                    ]
-                }
-            ],
-            "status": "OK"
+        with patch('mealpal.utils.google_maps_client.get_walking_time') as patch_get_walking_time:
+            patch_get_walking_time.return_value = 300
+
+            with patch('mealpal.utils.logging_in_manager.decrypt') as patch_decrypt:
+                patch_decrypt.return_value = "MealPalAPITest"
+
+                with patch('mealpal.aws.dynamodb.get_distance') as patch_get_distance:
+                    patch_get_distance.return_value = 10
+
+                    response = app.test_client().post('/find/1234/1?origin=abc')
+                    assert response.status_code == 200
+                    assert response.json == [schedule]
+
+
+def test_find_without_origin_address():
+    with patch('mealpal.main.requests') as patch_requests:
+        patch_requests.get.return_value = Mock(ok=True)
+        schedule = {
+            "restaurant": {
+                "id": "1",
+                "address": "address",
+                "city": {
+                    "name": "Seattle"
+                },
+                "neighborhood": {
+                    "id": "1",
+                    "name": "Downtown"
+                },
+                "state": "WA"
+            }
+        }
+        patch_requests.get.return_value.json.return_value = {
+            "schedules": [
+                schedule
+            ]
         }
 
-        with patch('mealpal.utils.logging_in_manager.decrypt') as patch_decrypt:
-            patch_decrypt.return_value = "MealPalAPITest"
+        with patch('mealpal.utils.google_maps_client.get_walking_time') as patch_get_walking_time:
+            patch_get_walking_time.return_value = 900
+            with patch('mealpal.utils.logging_in_manager.decrypt') as patch_decrypt:
+                patch_decrypt.return_value = "MealPalAPITest"
 
-            with patch('mealpal.aws.dynamodb.get_distance') as patch_get_distance:
-                patch_get_distance.return_value = 10
-
-                response = app.test_client().post('/find/1234/1?office=abc')
+                response = app.test_client().post('/find/1234/1')
                 assert response.status_code == 200
                 assert response.json == [schedule]
 
 
-def test_find_without_office_address():
-    with patch('mealpal.main.requests') as patch_requests:
-        patch_requests.get.return_value = Mock(ok=True)
-        schedule = {
-            "restaurant": {
-                "id": "1",
-                "address": "address",
-                "city": {
-                    "name": "Seattle"
-                },
-                "neighborhood": {
-                    "id": "1",
-                    "name": "Downtown"
-                },
-                "state": "WA"
-            }
-        }
-        patch_requests.get.return_value.json.return_value = {
-            "schedules": [
-                schedule
-            ]
-        }
-
-        patch_requests.post.return_value = Mock(ok=True)
-        patch_requests.post.return_value.json.return_value = {
-            "destination_addresses": [
-                "address, Seattle, WA"
-            ],
-            "origin_addresses": [
-                "2021 7th Ave, Seattle, WA"
-            ],
-            "rows": [
-                {
-                    "elements": [
-                        {
-                            "distance": {
-                                "text": "10km",
-                                "value": 10000
-                            },
-                            "duration": {
-                                "text": "15 minutes",
-                                "value": 900
-                            },
-                            "status": "OK"
-                        }
-                    ]
-                }
-            ],
-            "status": "OK"
-        }
-        with patch('mealpal.utils.logging_in_manager.decrypt') as patch_decrypt:
-            patch_decrypt.return_value = "MealPalAPITest"
-
-            response = app.test_client().post('/find/1234/1')
-            assert response.status_code == 200
-            assert response.json == [schedule]
-
-
-def test_find_with_office_address_multiple_offerings():
+def test_find_with_origin_address_multiple_offerings():
     with patch('mealpal.main.requests') as patch_requests:
         patch_requests.get.return_value = Mock(ok=True)
         schedule1 = {
@@ -195,71 +145,19 @@ def test_find_with_office_address_multiple_offerings():
             ]
         }
 
-        patch_requests.post.return_value = Mock(ok=True)
-        patch_requests.post.return_value.json.side_effect = [
-            {
-                "destination_addresses": [
-                    "address, Seattle, WA"
-                ],
-                "origin_addresses": [
-                    "2021 7th Ave, Seattle, WA"
-                ],
-                "rows": [
-                    {
-                        "elements": [
-                            {
-                                "distance": {
-                                    "text": "10km",
-                                    "value": 10000
-                                },
-                                "duration": {
-                                    "text": "15 minutes",
-                                    "value": 900
-                                },
-                                "status": "OK"
-                            }
-                        ]
-                    }
-                ],
-                "status": "OK"
-            },
-            {
-                "destination_addresses": [
-                    "address, Seattle, WA"
-                ],
-                "origin_addresses": [
-                    "2021 7th Ave, Seattle, WA"
-                ],
-                "rows": [
-                    {
-                        "elements": [
-                            {
-                                "distance": {
-                                    "text": "3km",
-                                    "value": 3000
-                                },
-                                "duration": {
-                                    "text": "5 minutes",
-                                    "value": 300
-                                },
-                                "status": "OK"
-                            }
-                        ]
-                    }
-                ],
-                "status": "OK"
-            }
-        ]
-        with patch('mealpal.utils.logging_in_manager.decrypt') as patch_decrypt:
-            patch_decrypt.return_value = "MealPalAPITest"
+        with patch('mealpal.utils.google_maps_client.get_walking_time') as patch_get_walking_time:
+            patch_get_walking_time.side_effect = [900, 300]
+            with patch('mealpal.utils.logging_in_manager.decrypt') as patch_decrypt:
+                patch_decrypt.return_value = "MealPalAPITest"
 
-            with patch('mealpal.aws.dynamodb.get_distance') as patch_get_distance:
-                patch_get_distance.return_value = None
+                with patch('mealpal.aws.dynamodb.get_distance') as patch_get_distance:
+                    patch_get_distance.return_value = None
 
-                with patch('mealpal.aws.dynamodb.store_distance'):
-                    response = app.test_client().post('/find/1234/1?office=abc')
-                    assert response.status_code == 200
-                    assert response.json == [schedule2, schedule1]  # schedule2 is closer to the office than schedule1
+                    with patch('mealpal.aws.dynamodb.store_distance'):
+                        response = app.test_client().post('/find/1234/1?origin=abc')
+                        assert response.status_code == 200
+                        # schedule2 is closer to the origin than schedule1
+                        assert response.json == [schedule2, schedule1]
 
 
 def test_find_no_path_parameters():
