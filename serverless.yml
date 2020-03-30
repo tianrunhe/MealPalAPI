@@ -6,12 +6,8 @@ provider:
   stage: dev
   region: us-east-1
   memorySize: 128
-  timeout: 120 # 2 minutes
+  timeout: 10 # 10 seconds
   iamRoleStatements:
-      - Effect: Allow
-        Action:
-          - kms:Decrypt
-        Resource: 'arn:aws:kms:*:*:key/*'
       - Effect: Allow
         Action:
           - dynamodb:Query
