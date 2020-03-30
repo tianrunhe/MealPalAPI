@@ -16,6 +16,9 @@
 
 #### Installation
 ```bash
+$ https://github.com/tianrunhe/MealPalAPI.git
+$ cd MealPalAPI
+$ virtualenv venv --python=python3
 $ source venv/bin/activate
 $ pip install -r requirements.txt
 $ cp .env.example .env # Modify environment variables here
