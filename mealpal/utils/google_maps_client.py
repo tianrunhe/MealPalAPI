@@ -1,15 +1,13 @@
+import os
+
 import googlemaps
 from dictor import dictor
 from flask import g
-from mealpal.aws.kms import decrypt
-from mealpal.utils.config_fetcher import ConfigFetcher
 
 
 def get_goolge_maps_client():
     if 'google_maps' not in g:
-        config_fetcher = ConfigFetcher()
-        google_maps_info = config_fetcher.get_google_maps_info()
-        g.google_maps = googlemaps.Client(decrypt(google_maps_info['encryptedAPIKey']))
+        g.google_maps = googlemaps.Client(os.getenv("GOOGLE_MAPS_API_KEY"))
 
     return g.google_maps
 

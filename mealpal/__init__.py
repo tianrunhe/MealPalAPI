@@ -1,3 +1,5 @@
+import os
+
 import requests
 import json
 from concurrent.futures import ThreadPoolExecutor
@@ -10,13 +12,18 @@ from mealpal.constants import HEADERS, NEIGHBORHOODS_URL, RESERVATIONS_URL, MENU
 from mealpal.utils import auth
 from mealpal.utils.auth import login_required
 import mealpal.aws.dynamodb as dynamodb
-
+from dotenv import load_dotenv
 
 executor = ThreadPoolExecutor(10)
 
 
 def create_app():
-    app = Flask(__name__)
+    app_root = os.path.join(os.path.dirname(__file__), '..')
+    dotenv_path = os.path.join(app_root, '.env')
+    load_dotenv(dotenv_path)
+
+    app = Flask(__name__, instance_relative_config=True)
+    app.register_blueprint(auth.bp)
 
     @app.route("/cities")
     def get_cities():
@@ -73,7 +80,5 @@ def create_app():
         response = [result['offering'] for result in sorted(results, key=lambda i: i['walkingDistance'])]
 
         return jsonify(response)
-
-    app.register_blueprint(auth.bp)
 
     return app
