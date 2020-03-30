@@ -9,7 +9,7 @@ import pytest
         ('test', 'test', b'123@gmail.com'),
 ))
 def test_login(username, password, message, client):
-    with patch('mealpal.utils.auth.requests.post') as patch_post_requests:
+    with patch('mealpal.blueprints.auth.requests.post') as patch_post_requests:
         patch_post_requests.return_value = Mock()
         patch_post_requests.return_value.ok = True
         patch_post_requests.return_value.json.return_value = {
@@ -29,17 +29,17 @@ def test_login(username, password, message, client):
             }
         }
         response = client.post(
-            '/auth/login',
+            '/login',
             json={'username': username, 'password': password}
         )
         assert message in response.data
 
 
 def test_login_failed(client):
-    with patch('mealpal.utils.auth.requests.post') as patch_post_requests:
+    with patch('mealpal.blueprints.auth.requests.post') as patch_post_requests:
         patch_post_requests.return_value = Mock(ok=False)
         response = client.post(
-            '/auth/login',
+            '/login',
             json={'username': "123", 'password': "123"}
         )
         assert b"Could not log in" in response.data

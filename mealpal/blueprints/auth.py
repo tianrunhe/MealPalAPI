@@ -6,9 +6,9 @@ from flask import (
     Blueprint, g, request, jsonify, make_response)
 
 from mealpal.constants import LOGIN_URL, HEADERS
-from mealpal.validation.log_in_validator import LoggingInJsonData
+from mealpal.validations.log_in_validator import LoggingInJsonData
 
-bp = Blueprint('auth', __name__, url_prefix='/auth')
+bp = Blueprint('auth', __name__)
 
 
 def login_required(f):
@@ -30,7 +30,7 @@ def login_required(f):
 def login():
     """Log in a registered user by adding the user info to the session."""
 
-    # validation
+    # validations
     inputs = LoggingInJsonData(request)
     if not inputs.validate():
         return jsonify(success=False, errors=inputs.errors)

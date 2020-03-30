@@ -1,6 +1,6 @@
 from flask import request
 
-from mealpal.validation.log_in_validator import LoggingInJsonData
+from mealpal.validations.log_in_validator import LoggingInJsonData
 
 valid_data = '{"username": "123@gmail.com", "password": "1234"}'
 invalid_data = '{"username": ""}'
