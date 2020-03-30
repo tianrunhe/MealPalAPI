@@ -28,7 +28,7 @@ plugins:
 
 custom:
   wsgi:
-    app: mealpal.main.app
+    app: mealpal.wsgi.app
     packRequirements: false
 
 functions:
