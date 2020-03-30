@@ -33,7 +33,7 @@ def test_reserve(client):
         assert b'{\"success\": false}' in response.data
 
 
-def test_find_with_origin_address(client):
+def test_find_with_origin_address(client, google_maps_helper):
     with patch('mealpal.requests') as patch_requests:
         patch_requests.get.return_value = Mock(ok=True)
         schedule = {
@@ -56,49 +56,45 @@ def test_find_with_origin_address(client):
             ]
         }
 
-        with patch('mealpal.utils.google_maps_client.get_walking_time') as patch_get_walking_time:
-            patch_get_walking_time.return_value = 300
+        google_maps_helper.get_walking_time.return_value = 300
+        with patch('mealpal.aws.dynamodb.get_distance') as patch_get_distance:
+            patch_get_distance.return_value = 10
 
-            with patch('mealpal.aws.dynamodb.get_distance') as patch_get_distance:
-                patch_get_distance.return_value = 10
-
-                response = client.post('/find/1234/1?origin=abc')
-                assert response.status_code == 200
-                assert response.json == [schedule]
-
-
-def test_find_without_origin_address(client):
-    with patch('mealpal.requests') as patch_requests:
-        patch_requests.get.return_value = Mock(ok=True)
-        schedule = {
-            "restaurant": {
-                "id": "1",
-                "address": "address",
-                "city": {
-                    "name": "Seattle"
-                },
-                "neighborhood": {
-                    "id": "1",
-                    "name": "Downtown"
-                },
-                "state": "WA"
-            }
-        }
-        patch_requests.get.return_value.json.return_value = {
-            "schedules": [
-                schedule
-            ]
-        }
-
-        with patch('mealpal.utils.google_maps_client.get_walking_time') as patch_get_walking_time:
-            patch_get_walking_time.return_value = 900
-
-            response = client.post('/find/1234/1')
+            response = client.post('/find/1234/1?origin=abc')
             assert response.status_code == 200
             assert response.json == [schedule]
 
 
-def test_find_with_origin_address_multiple_offerings(client):
+def test_find_without_origin_address(client, google_maps_helper):
+    with patch('mealpal.requests') as patch_requests:
+        patch_requests.get.return_value = Mock(ok=True)
+        schedule = {
+            "restaurant": {
+                "id": "1",
+                "address": "address",
+                "city": {
+                    "name": "Seattle"
+                },
+                "neighborhood": {
+                    "id": "1",
+                    "name": "Downtown"
+                },
+                "state": "WA"
+            }
+        }
+        patch_requests.get.return_value.json.return_value = {
+            "schedules": [
+                schedule
+            ]
+        }
+
+        google_maps_helper.get_walking_time.return_value = 900
+        response = client.post('/find/1234/1')
+        assert response.status_code == 200
+        assert response.json == [schedule]
+
+
+def test_find_with_origin_address_multiple_offerings(client, google_maps_helper):
     with patch('mealpal.requests') as patch_requests:
         patch_requests.get.return_value = Mock(ok=True)
         schedule1 = {
@@ -136,17 +132,15 @@ def test_find_with_origin_address_multiple_offerings(client):
             ]
         }
 
-        with patch('mealpal.utils.google_maps_client.get_walking_time') as patch_get_walking_time:
-            patch_get_walking_time.side_effect = [900, 300]
+        google_maps_helper.get_walking_time.side_effect = [900, 300]
+        with patch('mealpal.aws.dynamodb.get_distance') as patch_get_distance:
+            patch_get_distance.return_value = None
 
-            with patch('mealpal.aws.dynamodb.get_distance') as patch_get_distance:
-                patch_get_distance.return_value = None
-
-                with patch('mealpal.aws.dynamodb.store_distance'):
-                    response = client.post('/find/1234/1?origin=abc')
-                    assert response.status_code == 200
-                    # schedule2 is closer to the origin than schedule1
-                    assert response.json == [schedule2, schedule1]
+            with patch('mealpal.aws.dynamodb.store_distance'):
+                response = client.post('/find/1234/1?origin=abc')
+                assert response.status_code == 200
+                # schedule2 is closer to the origin than schedule1
+                assert response.json == [schedule2, schedule1]
 
 
 def test_find_no_path_parameters(client):

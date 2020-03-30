@@ -1,20 +1,18 @@
 import os
+import queue
 
 import requests
 import json
-from concurrent.futures import ThreadPoolExecutor
 from flask import Flask, g
 from flask import jsonify
 from flask import request
 
-import mealpal.utils.google_maps_client as google_maps
 from mealpal.constants import HEADERS, NEIGHBORHOODS_URL, RESERVATIONS_URL, MENU_URL
 from mealpal.utils import auth
 from mealpal.utils.auth import login_required
-import mealpal.aws.dynamodb as dynamodb
 from dotenv import load_dotenv
 
-executor = ThreadPoolExecutor(10)
+from mealpal.utils.distance_calculator import DistanceCalculator
 
 
 def create_app():
@@ -63,21 +61,17 @@ def create_app():
         if origin_address is None:
             return jsonify(eligible_schedules)
 
-        results = []
+        task_queue, result_queue = queue.Queue(), queue.Queue()
         for offering in eligible_schedules:
-            restaurant = offering['restaurant']
+            task_queue.put(offering)
+        for _ in range(10):
+            worker = DistanceCalculator(task_queue, result_queue, origin_address)
+            worker.setDaemon(True)
+            worker.start()
+        task_queue.join()
 
-            destination_id = restaurant['id']
-            duration = dynamodb.get_distance(origin_address, destination_id)
-            if duration is None:
-                destination = F"{restaurant['address']}, {restaurant['city']['name']}, {restaurant['state']}"
-                duration = google_maps.get_walking_time(origin_address, destination)
-                if duration is not None:
-                    executor.submit(dynamodb.store_distance, origin_address, destination_id, duration)
-
-            results.append({'offering': offering, 'walkingDistance': duration})
-
-        response = [result['offering'] for result in sorted(results, key=lambda i: i['walkingDistance'])]
+        response = [result['offering'] for result in
+                    sorted(list(result_queue.queue), key=lambda i: i['walkingDistance'])]
 
         return jsonify(response)
 
