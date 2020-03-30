@@ -39,7 +39,7 @@ def test_reserve(client):
                                                headers=HEADERS, cookies=expected_cookie)
 
 
-def test_find_and_sorted_by_distance(client, google_maps_helper):
+def test_find_and_sorted_by_distance(client):
     with patch('mealpal.blueprints.meal.requests') as patch_requests:
         patch_requests.get.return_value = Mock(ok=True)
         schedule = {
@@ -101,7 +101,7 @@ def test_find(client):
         assert response.json == [schedule]
 
 
-def test_find_and_sorted_by_distances_from_multiple_offerings(client, google_maps_helper):
+def test_find_and_sorted_by_distances_from_multiple_offerings(client):
     with patch('mealpal.blueprints.meal.requests') as patch_requests:
         patch_requests.get.return_value = Mock(ok=True)
         schedule1 = {
