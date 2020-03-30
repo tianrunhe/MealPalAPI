@@ -13,7 +13,7 @@ def google_maps_helper():
 
 
 @pytest.fixture
-def app(google_maps_helper):
+def app():
     """Create and configure a new app instance for each test."""
     app = create_app()
     yield app

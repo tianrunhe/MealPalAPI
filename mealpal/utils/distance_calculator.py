@@ -32,5 +32,6 @@ class DistanceCalculator(threading.Thread):
                 if duration is not None:
                     self.executor.submit(dynamodb.store_distance, self.origin_address, destination_id, duration)
 
-            self.result_queue.put_nowait({'offering': offering, 'walkingDistance': duration})
+            offering['walkingTimeFromOrigin'] = duration
+            self.result_queue.put_nowait(offering)
             self.task_queue.task_done()

@@ -70,8 +70,8 @@ def create_app():
             worker.start()
         task_queue.join()
 
-        response = [result['offering'] for result in
-                    sorted(list(result_queue.queue), key=lambda i: i['walkingDistance'])]
+        response = [result for result in
+                    sorted(list(result_queue.queue), key=lambda r: r['walkingTimeFromOrigin'])]
 
         return jsonify(response)
 
